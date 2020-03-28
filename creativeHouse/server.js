@@ -1,5 +1,6 @@
 const express = require('express')
 const nunjucks = require('nunjucks')
+const db = require("./db")
 
 const server = express()
 
@@ -9,59 +10,68 @@ nunjucks.configure("views", {
 
 })
 
-const ideas = [
-    {
-        img: "https://image.flaticon.com/icons/svg/2729/2729007.svg",
-        title: "Cursos de Programaca",
-        category:"Estudo",
-        description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam, nesciunt numquam! Quod minimalibero vitae excepturi, totam impedit doloribus doloremque animi fuga tenetur molestiae? Quaedolorum natus laudantium nemo laborum?",
-        url: "http://google.com"
-    },
-    {
-        img: "https://image.flaticon.com/icons/svg/2729/2729007.svg",
-        title: "Cursos de Programaca",
-        category:"Estudo",
-        description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam, nesciunt numquam! Quod minimalibero vitae excepturi, totam impedit doloribus doloremque animi fuga tenetur molestiae? Quaedolorum natus laudantium nemo laborum?",
-        url: "http://google.com"
-    }, 
-    {
-        img: "https://image.flaticon.com/icons/svg/2729/2729007.svg",
-        title: "Cursos de Programaca",
-        category:"Estudo",
-        description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam, nesciunt numquam! Quod minimalibero vitae excepturi, totam impedit doloribus doloremque animi fuga tenetur molestiae? Quaedolorum natus laudantium nemo laborum?",
-        url: "http://google.com"
-    }, 
-    {
-        img: "https://image.flaticon.com/icons/svg/2729/2729007.svg",
-        title: "Cursos de Programaca",
-        category:"Estudo",
-        description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam, nesciunt numquam! Quod minimalibero vitae excepturi, totam impedit doloribus doloremque animi fuga tenetur molestiae? Quaedolorum natus laudantium nemo laborum?",
-        url: "http://google.com"
-    },                                                  
-]
-
 server.use(express.static('backup'))
+server.use(express.urlencoded({ extended: true }))
 
-server.get('/', (req, res) => {
+server.get('/', async (req, res) => {
     let lastIdeas = []
+    await db.all(`SELECT * FROM ideas`, (err, result) => {
+        if (err) if (err) return console.log(err)
 
-    let reversedIdeas = [...ideas].reverse()
+         let reversedIdeas =  [...result].reverse()
 
-    for(idea of reversedIdeas){
-        if(lastIdeas.length < 2){
-            lastIdeas.push(idea)
+        for (idea of reversedIdeas) {
+            if (lastIdeas.length < 2) {
+                lastIdeas.push(idea)
+                console.log(lastIdeas.length)
+            }
         }
-    } 
+    })
 
 
-    return res.render('index.html', {ideas: lastIdeas})
+
+
+
+    return res.render('index.html', { ideas: lastIdeas })
+})
+server.post('/', (req, res) => {
+    const { image_url, title, category, description, link } = req.body
+
+    const query = `
+        INSERT INTO ideas(
+            img,
+            title,
+            category,
+            description,
+             url
+        ) VALUES(?,?,?,?,?);`
+
+    const values = [
+        image_url,
+        title,
+        category,
+        description,
+        link
+    ]
+
+    db.get(query, values, (err) => {
+        if (err) return console.log(err)
+
+    })
+    return res.redirect('/ideias')
 })
 
 server.get('/ideias', (req, res) => {
-    let reversedIdeas = [...ideas].reverse()
+    db.all(`SELECT * FROM ideas`, (err, result) => {
+        if (err) if (err) return console.log(err)
 
-    return res.render('ideias.html', {ideas: reversedIdeas})
+        let reversedIdeas = [...result].reverse()
+
+        return res.render('ideias.html', { ideas: reversedIdeas })
+    })
+    
 })
+
 
 
 server.listen(3000)
